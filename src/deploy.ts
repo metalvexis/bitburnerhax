@@ -14,44 +14,75 @@ const SCRIPT_PATH = new Map<string, string>(
 
 export async function main(ns: NS): Promise<void> {
   const WHITELIST_SERVERS = ["home", "home2", "home3", "darkweb"];
-  const TARGET_SERVERS = ["n00dles"];
 
   ns.tprintf("%s", `Deploying to ${ns.args[0] ?? "root"}`);
-  const knownServers = dfsScan(ns, [...WHITELIST_SERVERS], undefined, 0);
-  ns.tprintf("Known: %s", knownServers.map((s) => s.hostname).join(", "));
+  let knownServers: Server[] = [];
+
+  if (!ns.args[0]) {
+    knownServers = knownServers.concat(
+      dfsScan(ns, [...WHITELIST_SERVERS], undefined, 0)
+    );
+    ns.tprintf("Known: %s", knownServers.map((s) => s.hostname).join(", "));
+  } else {
+    knownServers = [ns.getServer(ns.args[0] as string)];
+  }
 
   knownServers.map(async (s) => {
-    // if (!TARGET_SERVERS.includes(s.hostname)) return;
+    if (!s.hasAdminRights) {
+      // ns.tprintf("%s %s", "Cracking", s.hostname);
+      await ns.run(PATH + SCRIPTS.get("crack"), 1);
+    }
 
-    if (ns.getPlayer().skills.hacking < s.requiredHackingSkill) {
-      ns.tprintf("%s %s", "Skipping", s.hostname);
+    const isBetterHaxSkill = ns.getPlayer().skills.hacking >= s.requiredHackingSkill;
+    const isPortsOpened = s.openPortCount >= s.numOpenPortsRequired;
+
+    const isHaxable = isBetterHaxSkill || isPortsOpened  ;
+    
+    if (!isHaxable) {
+      ns.tprintf("%s %s", "Cannot hack ", s.hostname);
       return;
     }
 
-    ns.tprintf("%s %s", "Cracking", s.hostname);
-    await ns.run(PATH + SCRIPTS.get("crack"), 1);
-
+    // ns.tprintf("Copying hax to %s", s.hostname);
     Array.from(SCRIPTS).map((scr: [string, string]) => {
       const script = [PATH, scr[1]].join("/");
-      ns.tprintf("Copying %s to %s", script, s.hostname);
       ns.scp(script, s.hostname);
     });
 
-    ns.tprintf(
-      "Running %s (%s GB) on %s (%s GB)",
-      "HGW: " + SCRIPT_PATH.get("hgw"),
-      ns.getScriptRam(SCRIPT_PATH.get("hgw") as string),
-      s.hostname,
-      s.maxRam-s.ramUsed,
-    );
+
+    const scriptHgw = SCRIPT_PATH.get("hgw") as string;
+    const freeRam = s.maxRam - s.ramUsed;
+    const hgwRam = ns.getScriptRam(scriptHgw);
+    const maxHgwThreads = parseInt(`${freeRam/hgwRam}`);
+
+    if (hgwRam > freeRam) {
+      ns.tprintf("Not enough RAM on %s %Threads %sGb (%sThreads %sGB required)", s.hostname, s.cpuCores, freeRam, maxHgwThreads, hgwRam)
+      return;
+    }
+  
+    // ns.tprintf(
+    //   "Running %s (%s GB) on %s (%s GB)",
+    //   "HGW: " + scriptHgw,
+    //   ns.getScriptRam(scriptHgw),
+    //   s.hostname,
+    //   s.maxRam - s.ramUsed
+    // );
+
+    ns.scriptKill(scriptHgw, s.hostname);
 
     const PID = await ns.exec(
-      SCRIPT_PATH.get("hgw"),
+      scriptHgw,
       s.hostname,
-      1
+      maxHgwThreads,
+      s.hostname
     );
 
-    if (PID === 0) ns.tprintf("HGW FAILED");
+    if (PID === 0) {
+      ns.tprintf("HGW Deploy failed: %s", s.hostname);
+      return;
+    }
+
+    ns.tprintf("Haxxed: %s", s.hostname);
   });
 }
 

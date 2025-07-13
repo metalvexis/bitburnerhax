@@ -14,7 +14,9 @@ export async function main(ns: NS) {
 
   const targetServer = ns.getServer(targetHost);
 
-  const isHaxable = player.skills.hacking >= (targetServer.requiredHackingSkill ?? 0);
+  const isBetterHaxSkill = player.skills.hacking >= (targetServer.requiredHackingSkill ?? 0);
+  const isPortsOpened = targetServer.openPortCount >= targetServer.numOpenPortsRequired
+  const isHaxable = isBetterHaxSkill || isPortsOpened;
   const isMissingHax = HAXSCRIPTS.some((scr) => !ns.fileExists(`${scr}.js`, targetHost))
   
   ns.tprintf('%s' ,`Hax: ` + JSON.stringify({

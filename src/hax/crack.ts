@@ -3,30 +3,49 @@ import { NS } from "@ns";
 /** @param {NS} ns */
 export async function main(ns: NS) {
   const target = ns.args[0] as string;
+  let openPort = 0;
 
   if (ns.fileExists("BruteSSH.exe", "home")) {
-    ns.brutessh(target);
+    const res = ns.brutessh(target);
+    if (res) openPort++;
   }
 
   if (ns.fileExists("FTPCrack.exe", "home")) {
-    ns.ftpcrack(target);
+    const res = ns.ftpcrack(target);
+    if (res) openPort++;
   }
 
   if (ns.fileExists("relaySMTP.exe", "home")) {
-    ns.relaysmtp(target);
+    const res = ns.relaysmtp(target);
+    if (res) openPort++;
   }
 
   if (ns.fileExists("HTTPWorm.exe", "home")) {
-    ns.httpworm(target);
+    const res = ns.httpworm(target);
+    if (res) openPort++;
   }
 
   if (ns.fileExists("SQLInject.exe", "home")) {
-    ns.sqlinject(target);
+    const res = ns.sqlinject(target);
+    if (res) openPort++;
   }
 
-  const result = ns.nuke(target);
+  let result;
+  if (!openPort) {
+    ns.tprintf("Cannot crack %s", target);
+    return;
+  }
+
+  if (openPort) {
+    try {
+      result = ns.nuke(target);
+    } catch (error) {
+      ns.tprintf("NUKE failed on %s: %s", target, JSON.stringify(error,null,""));
+      return false;
+    }
+  }
 
   ns.tprint("Nuke complete on " + target + ".");
-  
+
   return result;
 }

@@ -13,7 +13,7 @@ const SCRIPT_PATH = new Map<string, string>(
 );
 
 export async function main(ns: NS): Promise<void> {
-  const WHITELIST_SERVERS = ["home", "home2", "home3", "darkweb"];
+  const WHITELIST_SERVERS = ["home", "darkweb"].concat(ns.getPurchasedServers());
 
   ns.tprintf("%s", `Deploying to ${ns.args[0] ?? "root"}`);
   let knownServers: Server[] = [];
@@ -29,8 +29,7 @@ export async function main(ns: NS): Promise<void> {
 
   knownServers.map(async (s) => {
     if (!s.hasAdminRights) {
-      // ns.tprintf("%s %s", "Cracking", s.hostname);
-      await ns.run(PATH + SCRIPTS.get("crack"), 1);
+      await ns.run(SCRIPT_PATH.get("crack"), 1, s.hostname);
     }
 
     const isBetterHaxSkill = ns.getPlayer().skills.hacking >= s.requiredHackingSkill;
@@ -39,7 +38,7 @@ export async function main(ns: NS): Promise<void> {
     const isHaxable = isBetterHaxSkill || isPortsOpened  ;
     
     if (!isHaxable) {
-      ns.tprintf("%s %s", "Cannot hack ", s.hostname);
+      // ns.tprintf("%s %s", "Cannot hack ", s.hostname);
       return;
     }
 
@@ -53,10 +52,12 @@ export async function main(ns: NS): Promise<void> {
     const scriptHgw = SCRIPT_PATH.get("hgw") as string;
     const freeRam = s.maxRam - s.ramUsed;
     const hgwRam = ns.getScriptRam(scriptHgw);
-    const maxHgwThreads = parseInt(`${freeRam/hgwRam}`);
+    const maxHgwThreads = getMaxUsableRam(freeRam, hgwRam);
+    const hgwIsRunning = ns.scriptRunning(scriptHgw, s.hostname)
 
-    if (hgwRam > freeRam) {
-      ns.tprintf("Not enough RAM on %s %Threads %sGb (%sThreads %sGB required)", s.hostname, s.cpuCores, freeRam, maxHgwThreads, hgwRam)
+
+    if (!hgwIsRunning && hgwRam > freeRam) {
+      ns.tprintf("Not enough RAM on %s %sThreads %sGb (%sThreads %sGB required)", s.hostname, s.cpuCores, freeRam, maxHgwThreads, hgwRam)
       return;
     }
   
@@ -68,16 +69,16 @@ export async function main(ns: NS): Promise<void> {
     //   s.maxRam - s.ramUsed
     // );
 
-    ns.scriptKill(scriptHgw, s.hostname);
+    if (hgwIsRunning) ns.killall(s.hostname, true);
 
     const PID = await ns.exec(
-      scriptHgw,
-      s.hostname,
-      maxHgwThreads,
-      s.hostname
-    );
+        scriptHgw,
+        s.hostname,
+        getMaxUsableRam(s.maxRam, hgwRam),
+        s.hostname
+      );
 
-    if (PID === 0) {
+    if (!PID) {
       ns.tprintf("HGW Deploy failed: %s", s.hostname);
       return;
     }
@@ -105,4 +106,8 @@ function dfsScan(
 
   // ns.tprintf("%s", root?.padStart(currentDepth, "-"));
   return list;
+}
+
+function getMaxUsableRam(free: number, use = 1) {
+  return parseInt(`${free/use}`)
 }

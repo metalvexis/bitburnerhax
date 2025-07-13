@@ -3,7 +3,11 @@ import { NS, Server } from "@ns";
 export async function main(ns: NS): Promise<void> {
   for (;;) {
     // ns.tprint(`Triggering hax`)
-    await hgw(ns, ns.args[0]);
+    try {
+      await hgw(ns, ns.args[0]);
+    } catch (error) {
+      break;
+    }
     await ns.asleep(50);
   }
 }
@@ -22,5 +26,14 @@ export async function hgw(ns: NS, targetHost: string): Promise<void> {
     // ns.tprintf('%s', `Grow ${server.hostname}`)
   }
 
-  await ns.hack(server.hostname);
+  try {
+    await ns.hack(server.hostname);
+  } catch (error) {
+    ns.tprintf(
+      "HGW deploy failed on %s: %s",
+      server.hostname,
+      JSON.stringify(error, null, "")
+    );
+    throw error;
+  }
 }

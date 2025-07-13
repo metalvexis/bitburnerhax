@@ -31,18 +31,19 @@ export async function main(ns: NS) {
   }
 
   let result;
-  if (!openPort) {
-    ns.tprintf("Cannot crack %s", target);
-    return;
-  }
-
-  if (openPort) {
-    try {
-      result = ns.nuke(target);
-    } catch (error) {
-      ns.tprintf("NUKE failed on %s: %s", target, JSON.stringify(error,null,""));
-      return false;
-    }
+  // if (!openPort) {
+  //   ns.tprintf("Cannot crack %s", target);
+  //   return;
+  // }
+  try {
+    result = ns.nuke(target);
+  } catch (error) {
+    ns.tprintf(
+      "NUKE failed on %s: %s",
+      target,
+      JSON.stringify(error, null, "")
+    );
+    return false;
   }
 
   ns.tprint("Nuke complete on " + target + ".");

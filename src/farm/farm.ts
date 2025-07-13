@@ -1,10 +1,15 @@
 import { NS } from "@ns";
 
-const PATH = "/";
+const PATH = "/farm";
 const SCRIPTS = new Map([
   ["rename_farm", "rename_farm.js"],
   ["share_farm", "share_farm.js"],
 ]);
+const SCRIPT_PATH = new Map<string, string>(
+  Array.from(SCRIPTS).map((scr): [string, string] => {
+    return [scr[0], [PATH, scr[1]].join("/")];
+  })
+);
 
 export async function main(ns: NS): Promise<void> {
   ns.tprint("Managing farms");
@@ -40,24 +45,24 @@ export async function main(ns: NS): Promise<void> {
   );
 
   for (const f of farms) {
-    Array.from(SCRIPTS.values()).forEach((s) => {
-      ns.scp(PATH + s, f);
+    Array.from(SCRIPT_PATH.keys()).forEach((k) => {
+      ns.scp(SCRIPT_PATH.get(k), f);
     });
 
     const isShareFarm = (ns.args[0] as string) == "share";
-    const isShared = ns.scriptRunning(SCRIPTS.get("share_farm"), f);
+    const isShared = ns.scriptRunning(SCRIPT_PATH.get("share_farm"), f);
 
     if (isShareFarm && isShared) {
-      ns.scriptKill(SCRIPTS.get("share_farm"), f);
+      ns.scriptKill(SCRIPT_PATH.get("share_farm"), f);
     }
 
     if(isShareFarm) {
-      ns.exec(PATH + SCRIPTS.get("share_farm"), f, 1, 6) > 0;
+      ns.exec(PATH + SCRIPT_PATH.get("share_farm"), f, 1, 6) > 0;
     }
 
     farmMap.set(f, {
       isManaged: true,
-      isShared: ns.scriptRunning(SCRIPTS.get("share_farm"), f),
+      isShared: ns.scriptRunning(SCRIPT_PATH.get("share_farm"), f),
     });
   }
 

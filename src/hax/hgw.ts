@@ -16,14 +16,14 @@ export async function hgw(ns: NS, targetHost: string): Promise<void> {
 
   if (server && server.hackDifficulty >= server.minDifficulty + 5) {
     await ns.weaken(server.hostname);
+    // ns.tprintf("%s", `Weaken ${server.hostname}`);
     return;
-    // ns.tprintf('%s', `Weaken ${server.hostname}`)
   }
 
-  if (server && server.moneyAvailable > server.moneyMax * 0.25) {
+  if (server && server.moneyAvailable < server.moneyMax * 0.9) {
     await ns.grow(server.hostname);
+    // ns.tprintf("%s", `Grow ${server.hostname}`);
     return;
-    // ns.tprintf('%s', `Grow ${server.hostname}`)
   }
 
   try {

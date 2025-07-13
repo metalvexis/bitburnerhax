@@ -35,10 +35,10 @@ export async function main(ns: NS): Promise<void> {
     const isBetterHaxSkill = ns.getPlayer().skills.hacking >= s.requiredHackingSkill;
     const isPortsOpened = s.openPortCount >= s.numOpenPortsRequired;
 
-    const isHaxable = isBetterHaxSkill || isPortsOpened  ;
+    const isHaxable = isBetterHaxSkill || isPortsOpened;
     
     if (!isHaxable) {
-      // ns.tprintf("%s %s", "Cannot hack ", s.hostname);
+      ns.tprintf("%s %s", "Cannot hack ", s.hostname);
       return;
     }
 

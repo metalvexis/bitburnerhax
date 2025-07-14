@@ -10,6 +10,5 @@ export async function main(ns: NS): Promise<void> {
 
   for (let index = 0; index < iterations; index++) {
     await ns.share();
-    
   }
 }

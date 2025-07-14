@@ -33,35 +33,32 @@ export async function main(ns: NS): Promise<void> {
     return freeRam;
   });
 
-  const sharePower = ns.getSharePower();
-
-  ns.tprintf(
-    "Farm stats: %s",
-    JSON.stringify({
-      farms: farms.length,
-      totalSharableRam,
-      sharePower,
-    }, null, "")
-  );
-
   for (const f of farms) {
     Array.from(SCRIPT_PATH.keys()).forEach((k) => {
       ns.scp(SCRIPT_PATH.get(k), f);
     });
-
+    const isMissingScript = Array.from(SCRIPT_PATH.keys())
+      .map((k) => ns.fileExists(SCRIPT_PATH.get(k), f))
+      .includes(false);
     const isShareFarm = (ns.args[0] as string) == "share";
     const isShared = ns.scriptRunning(SCRIPT_PATH.get("share_farm"), f);
 
     if (isShareFarm && isShared) {
+      ns.tprintf("Stop sharing %s", f);
       ns.scriptKill(SCRIPT_PATH.get("share_farm"), f);
     }
 
-    if(isShareFarm) {
-      ns.exec(PATH + SCRIPT_PATH.get("share_farm"), f, 1, 6) > 0;
+    if (isShareFarm) {
+      (await ns.exec(
+        SCRIPT_PATH.get("share_farm"),
+        f,
+        1,
+        ns.args[1] as string
+      )) > 0;
     }
 
     farmMap.set(f, {
-      isManaged: true,
+      isManaged: !isMissingScript,
       isShared: ns.scriptRunning(SCRIPT_PATH.get("share_farm"), f),
     });
   }
@@ -69,4 +66,25 @@ export async function main(ns: NS): Promise<void> {
   for (const [k, v] of farmMap.entries()) {
     ns.tprintf("%s", `${k} ${JSON.stringify(v)}`);
   }
+
+  const sharePower = ns.getSharePower();
+
+  ns.tprintf(
+    "Farm stats: %s",
+    JSON.stringify(
+      {
+        farms: farms.length,
+        totalSharableRam,
+        sharePower,
+      },
+      null,
+      ""
+    )
+  );
+}
+
+function deployScripts(ns: NS, target: string) {
+  Array.from(SCRIPT_PATH.keys()).map((key) => {
+    ns.scp(SCRIPT_PATH.get(key), target);
+  });
 }

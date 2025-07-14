@@ -13,7 +13,9 @@ const SCRIPT_PATH = new Map<string, string>(
 );
 
 export async function main(ns: NS): Promise<void> {
-  const WHITELIST_SERVERS = ["home", "darkweb"].concat(ns.getPurchasedServers());
+  const WHITELIST_SERVERS = ["home", "darkweb"].concat(
+    ns.getPurchasedServers()
+  );
 
   ns.tprintf("%s", `Deploying to ${ns.args[0] ?? "root"}`);
   let knownServers: Server[] = [];
@@ -28,19 +30,17 @@ export async function main(ns: NS): Promise<void> {
   }
 
   knownServers.map(async (s) => {
-    if (!s.hasAdminRights) {
-      await ns.run(SCRIPT_PATH.get("crack"), 1, s.hostname);
-    }
-
-    const isBetterHaxSkill = ns.getPlayer().skills.hacking >= s.requiredHackingSkill;
+    const isBetterHaxSkill =
+      ns.getPlayer().skills.hacking >= s.requiredHackingSkill;
     const isPortsOpened = s.openPortCount >= s.numOpenPortsRequired;
 
     const isHaxable = isBetterHaxSkill || isPortsOpened;
-    
+
     if (!isHaxable) {
-      ns.tprintf("%s %s", "Cannot hack ", s.hostname);
+      // ns.tprintf("%s %s", "Cannot hax ", s.hostname);
       return;
     }
+
 
     // ns.tprintf("Copying hax to %s", s.hostname);
     Array.from(SCRIPTS).map((scr: [string, string]) => {
@@ -48,19 +48,24 @@ export async function main(ns: NS): Promise<void> {
       ns.scp(script, s.hostname);
     });
 
-
     const scriptHgw = SCRIPT_PATH.get("hgw") as string;
     const freeRam = s.maxRam - s.ramUsed;
     const hgwRam = ns.getScriptRam(scriptHgw);
-    const maxHgwThreads = getMaxUsableRam(freeRam, hgwRam);
-    const hgwIsRunning = ns.scriptRunning(scriptHgw, s.hostname)
-
+    const maxHgwThreads = getMaxUsableInstance(s.cpuCores, freeRam, hgwRam);
+    const hgwIsRunning = ns.scriptRunning(scriptHgw, s.hostname);
 
     if (!hgwIsRunning && hgwRam > freeRam) {
-      ns.tprintf("Not enough RAM on %s %sThreads %sGb (%sThreads %sGB required)", s.hostname, s.cpuCores, freeRam, maxHgwThreads, hgwRam)
+      ns.tprintf(
+        "Not enough RAM on %s %sThreads %sGb (%sThreads %sGB required)",
+        s.hostname,
+        s.cpuCores,
+        freeRam,
+        maxHgwThreads,
+        hgwRam
+      );
       return;
     }
-  
+
     // ns.tprintf(
     //   "Running %s (%s GB) on %s (%s GB)",
     //   "HGW: " + scriptHgw,
@@ -69,17 +74,25 @@ export async function main(ns: NS): Promise<void> {
     //   s.maxRam - s.ramUsed
     // );
 
-    if (hgwIsRunning) ns.killall(s.hostname, true);
+    // if (hgwIsRunning) ns.killall(s.hostname, true);
+     if (hgwIsRunning) return;
+
+    const maxInstanceByRam = getMaxUsableInstance(s.cpuCores, s.maxRam, hgwRam);
 
     const PID = await ns.exec(
-        scriptHgw,
-        s.hostname,
-        getMaxUsableRam(s.maxRam, hgwRam),
-        s.hostname
-      );
+      scriptHgw,
+      s.hostname,
+      maxInstanceByRam,
+      s.hostname
+    );
+    await ns.asleep(1000);
 
     if (!PID) {
-      ns.tprintf("HGW Deploy failed: %s", s.hostname);
+      ns.tprintf(
+        "HGW Deploy failed: %s (%sGB)",
+        s.hostname,
+        getMaxUsableInstance(s.maxRam, hgwRam)
+      );
       return;
     }
 
@@ -108,6 +121,8 @@ function dfsScan(
   return list;
 }
 
-function getMaxUsableRam(free: number, use = 1) {
-  return parseInt(`${free/use}`)
+function getMaxUsableInstance(cores = 1, freeRam = 1, ramUse = 1) {
+  const maxByRam = parseInt(`${freeRam / ramUse}`);
+  const maxByCore = parseInt(`${(ramUse * cores) / freeRam}`);
+  return maxByRam;
 }

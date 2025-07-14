@@ -51,7 +51,7 @@ export async function main(ns: NS): Promise<void> {
     const scriptHgw = SCRIPT_PATH.get("hgw") as string;
     const freeRam = s.maxRam - s.ramUsed;
     const hgwRam = ns.getScriptRam(scriptHgw);
-    const maxHgwThreads = getMaxUsableInstance(s.cpuCores, freeRam, hgwRam);
+    const maxHgwThreads = getMaxScriptThreads(freeRam, hgwRam);
     const hgwIsRunning = ns.scriptRunning(scriptHgw, s.hostname);
 
     if (!hgwIsRunning && hgwRam > freeRam) {
@@ -77,7 +77,7 @@ export async function main(ns: NS): Promise<void> {
     // if (hgwIsRunning) ns.killall(s.hostname, true);
      if (hgwIsRunning) return;
 
-    const maxInstanceByRam = getMaxUsableInstance(s.cpuCores, s.maxRam, hgwRam);
+    const maxInstanceByRam = getMaxScriptThreads(s.maxRam, hgwRam);
 
     const PID = await ns.exec(
       scriptHgw,
@@ -91,7 +91,7 @@ export async function main(ns: NS): Promise<void> {
       ns.tprintf(
         "HGW Deploy failed: %s (%sGB)",
         s.hostname,
-        getMaxUsableInstance(s.maxRam, hgwRam)
+        getMaxScriptThreads(s.maxRam, hgwRam)
       );
       return;
     }
@@ -121,8 +121,7 @@ function dfsScan(
   return list;
 }
 
-function getMaxUsableInstance(cores = 1, freeRam = 1, ramUse = 1) {
+function getMaxScriptThreads(freeRam = 1, ramUse = 1) {
   const maxByRam = parseInt(`${freeRam / ramUse}`);
-  const maxByCore = parseInt(`${(ramUse * cores) / freeRam}`);
   return maxByRam;
 }

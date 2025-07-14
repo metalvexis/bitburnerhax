@@ -45,19 +45,19 @@ async function scout(ns: NS, target: string) {
 
 function dfsScan(
   ns: NS,
-  visited: string[],
+  exclude: string[],
   root?: string,
   currentDepth = 1
 ): Server[] {
-  const unvisited = ns.scan(root).filter((s) => !visited.includes(s));
+  const unvisited = ns.scan(root).filter((s) => !exclude.includes(s));
   let list: Server[] = [];
 
   for (const s of unvisited) {
-    visited.push(s);
+    exclude.push(s);
 
     list.push(ns.getServer(s));
 
-    list = list.concat(dfsScan(ns, visited, s, currentDepth + 1));
+    list = list.concat(dfsScan(ns, exclude, s, currentDepth + 1));
   }
 
   // ns.tprintf("%s", root?.padStart(currentDepth, "-"));

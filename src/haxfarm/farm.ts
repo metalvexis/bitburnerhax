@@ -1,15 +1,19 @@
 import { NS } from "@ns";
+import { HAXFARM_LIST, getScrHaxFarm } from "/haxlib/constants";
+import { isScriptsUploaded, uploadScripts } from "/haxlib/utils";
+// const PATH = "/haxfarm";
+// const SCRIPTS = new Map([
+//   ["rename_farm", "rename_farm.js"],
+//   ["share_farm", "share_farm.js"],
+//   ["attack_server", "attack_server.js"],
+//   ["farm", "farm.js"],
+// ]);
 
-const PATH = "/farm";
-const SCRIPTS = new Map([
-  ["rename_farm", "rename_farm.js"],
-  ["share_farm", "share_farm.js"],
-]);
-const SCRIPT_PATH = new Map<string, string>(
-  Array.from(SCRIPTS).map((scr): [string, string] => {
-    return [scr[0], [PATH, scr[1]].join("/")];
-  })
-);
+// const SCRIPT_PATH = new Map<string, string>(
+//   Array.from(SCRIPTS).map((scr): [string, string] => {
+//     return [scr[0], [PATH, scr[1]].join("/")];
+//   })
+// );
 
 export async function main(ns: NS): Promise<void> {
   ns.tprint("Managing farms");
@@ -34,23 +38,26 @@ export async function main(ns: NS): Promise<void> {
   });
 
   for (const f of farms) {
-    Array.from(SCRIPT_PATH.keys()).forEach((k) => {
-      ns.scp(SCRIPT_PATH.get(k), f);
-    });
-    const isMissingScript = Array.from(SCRIPT_PATH.keys())
-      .map((k) => ns.fileExists(SCRIPT_PATH.get(k), f))
-      .includes(false);
+    const isScriptsUploadOk = uploadScripts(ns, f);
+    // Array.from(Object.values(HAXFARM_LIST)).forEach((k) => {
+    //   ns.scp(getScrHaxFarm(HAXFARM_LIST[k]), f);
+    // });
+    
+    // const isMissingScript = Array.from(Object.values(HAXFARM_LIST))
+    //   .map((k) => ns.fileExists(getScrHaxFarm(HAXFARM_LIST[k]), f))
+    //   .includes(false);
+    const isScriptsExists = isScriptsUploaded(ns, f)
     const isShareFarm = (ns.args[0] as string) == "share";
-    const isShared = ns.scriptRunning(SCRIPT_PATH.get("share_farm"), f);
+    const isShared = ns.scriptRunning(getScrHaxFarm(HAXFARM_LIST.share_farm), f);
 
     if (isShareFarm && isShared) {
       ns.tprintf("Stop sharing %s", f);
-      ns.scriptKill(SCRIPT_PATH.get("share_farm"), f);
+      ns.scriptKill(getScrHaxFarm(HAXFARM_LIST.share_farm), f);
     }
 
     if (isShareFarm) {
       (await ns.exec(
-        SCRIPT_PATH.get("share_farm"),
+        getScrHaxFarm(HAXFARM_LIST.share_farm),
         f,
         1,
         ns.args[1] as string
@@ -58,8 +65,9 @@ export async function main(ns: NS): Promise<void> {
     }
 
     farmMap.set(f, {
-      isManaged: !isMissingScript,
-      isShared: ns.scriptRunning(SCRIPT_PATH.get("share_farm"), f),
+      isScriptsUploadOk,
+      isScriptsExists,
+      isShared: ns.scriptRunning(getScrHaxFarm(HAXFARM_LIST.share_farm), f),
     });
   }
 
@@ -81,10 +89,4 @@ export async function main(ns: NS): Promise<void> {
       ""
     )
   );
-}
-
-function deployScripts(ns: NS, target: string) {
-  Array.from(SCRIPT_PATH.keys()).map((key) => {
-    ns.scp(SCRIPT_PATH.get(key), target);
-  });
 }

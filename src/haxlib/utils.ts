@@ -47,8 +47,7 @@ export function uploadScripts(ns: NS, host: string): boolean {
 
 
 export function getMaxScriptThreads(freeRam = 1, ramUse = 1) {
-  const maxByRam = parseInt(`${freeRam / ramUse}`);
-  return maxByRam;
+  return Math.floor(freeRam / ramUse);
 }
 
 
@@ -73,8 +72,10 @@ export function dfsScan(
   return list;
 }
 
-export async function waitForScript(ns: NS, scriptOrPID: string | number, host: string) {
-  while(ns.isRunning(scriptOrPID, host)) {
-    await ns.asleep(1000);
+export async function waitForScript(ns: NS, scriptOrPID: (string | number)[], hosts: string[]) {
+  while(hosts.map((h,idx) => ns.isRunning(scriptOrPID[idx], h)).includes(true)) {
+    ns.tprintf("Waiting")
+    await ns.asleep(5000);
   }
+  ns.tprintf("Stopped waiting %s", scriptOrPID)
 }

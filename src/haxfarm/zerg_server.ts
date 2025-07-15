@@ -11,51 +11,55 @@ export async function main(ns: NS): Promise<void> {
   const farms = ns.getPurchasedServers();
 
   if (ns.args[0] === "kill") {
-    for (let f = 0; f < farms.length; f++) {
-      ns.killall(farms[f]);
-      await ns.asleep(500);
+    for (const f of farms) {
+      ns.killall(f);
+      await ns.asleep(100);
     }
     return;
   }
 
-  const target = ns.args[0] as string;
-  const task = ns.args[1] as string;
-  const victim = ns.getServer(target);
-  await ns.run(getScrHax(HAX_LIST.crack), 1, victim.hostname);
-  await ns.asleep(1000);
+  const task = ns.args[0] as string;
+  const target = ns.args[1] as string;
 
-  if (task === "weaken") {
-    await zerg(ns, getScrHaxFarm(HAXFARM_LIST.remote_weaken), farms, victim.hostname)
-    return;
-  }
+  const action: Record<string, string> = {
+    hack: getScrHaxFarm(HAXFARM_LIST.remote_hack),
+    grow: getScrHaxFarm(HAXFARM_LIST.remote_grow),
+    weaken: getScrHaxFarm(HAXFARM_LIST.remote_weaken),
+  };
 
-  if (task === "grow") {
-    await zerg(ns, getScrHaxFarm(HAXFARM_LIST.remote_grow), farms, victim.hostname)
-    return;
-  }
+  for (;;) {
+    await zerg(ns, action[task], farms, target);
 
-  if (task === "hack") {
-    await zerg(ns, getScrHaxFarm(HAXFARM_LIST.remote_hack), farms, victim.hostname)
-    return;
+    ns.tprintf("Waiting for %s:  %s", task, target);
+
+    
   }
 }
 
 async function zerg(ns: NS, script: string, farms: string[], victim: string) {
-  for (let f = 0; f < farms.length; f++) {
-    const farmName = farms[f];
+  const PIDS = [];
+  for (const farmName of farms) {
     const farm = ns.getServer(farmName);
     const maxThreads = getMaxScriptThreads(
       farm.maxRam - farm.ramUsed,
       ns.getScriptRam(script)
     );
-
-    const PID = ns.exec(script, farmName, maxThreads, victim, maxThreads);
-
+    ns.tprintf("%s Threads: %s", farmName, maxThreads);
+    const PID = ns.exec(
+      script,
+      farmName,
+      { threads: maxThreads },
+      victim,
+      maxThreads
+    );
     if (!PID) {
-      ns.tprintf("remote hack failed on %s", farmName);
-      break;
+      ns.tprintf("%s did not exec on %s", script, farmName);
+      continue;
     }
-
-    await waitForScript(ns, PID, farmName);
+    PIDS.push(PID)
   }
+
+  if (!PIDS.length) return;
+
+  await waitForScript(ns, PIDS, farms);
 }

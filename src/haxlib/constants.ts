@@ -12,7 +12,7 @@ export enum HAX_LIST {
 }
 
 export function getScrHax(h: HAX_LIST) {
-  const DIR = "/hax";
+  const DIR = "hax";
   return joinpath(DIR, h);
 }
 
@@ -28,7 +28,7 @@ export enum HAXFARM_LIST {
 }
 
 export function getScrHaxFarm(h: HAXFARM_LIST) {
-  const DIR = "/haxfarm";
+  const DIR = "haxfarm";
   return joinpath(DIR, h);
 }
 
@@ -38,7 +38,7 @@ export enum HAXLIB_LIST {
 }
 
 export function getScrHaxLib(h: HAXLIB_LIST) {
-  const DIR = "/haxlib"
+  const DIR = "haxlib"
   return joinpath(DIR,h)
 }
 

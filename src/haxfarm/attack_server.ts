@@ -16,7 +16,7 @@ enum HGW {
 export async function main(ns: NS): Promise<void> {
   const target = ns.args[0] as string;
   const freeRam = ns.getServerMaxRam("home") - ns.getServerUsedRam("home");
-  // await ns.run(getScrHax(HAX_LIST.crack), 1, target);
+  await ns.run(getScrHax(HAX_LIST.crack), 1, target);
   // await ns.asleep(500);
 
   const victim = ns.getServer(target);
@@ -28,7 +28,6 @@ export async function main(ns: NS): Promise<void> {
       // ns.tprintf("Weaken %s", target)
 
       await ns.weaken(victim.hostname, { threads, stock: true });
-
       await ns.asleep(500);
       continue;
     }

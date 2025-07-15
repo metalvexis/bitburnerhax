@@ -28,6 +28,7 @@ export function isScriptsUploaded(ns: NS, host: string): boolean {
   return isHaxUploaded && isHaxfarmUploaded && isHaxlibUploaded;
 }
 
+
 export function uploadScripts(ns: NS, host: string): boolean {
   return ![
     ...Array.from(Object.values(HAX_LIST)).map((k) =>
@@ -70,4 +71,10 @@ export function dfsScan(
 
   // ns.tprintf("%s", root?.padStart(currentDepth, "-"));
   return list;
+}
+
+export async function waitForScript(ns: NS, scriptOrPID: string | number, host: string) {
+  while(ns.isRunning(scriptOrPID, host)) {
+    await ns.asleep(1000);
+  }
 }

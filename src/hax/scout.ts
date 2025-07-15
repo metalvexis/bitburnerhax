@@ -1,4 +1,5 @@
 import { NS, Server } from "@ns";
+import { dfsScan } from "/haxlib/utils";
 
 const HAXSCRIPTS = ["hax/hgw", "hax/crack", "hax/scout"];
 
@@ -17,9 +18,13 @@ export async function main(ns: NS) {
     ns.getPurchasedServers()
   );
   const servers = dfsScan(ns, WHITELIST_SERVERS);
-  servers.map(async (s) => {
-    ns.tprintf(JSON.stringify(await scout(ns, s.hostname)));
-  });
+  const scouted: string[] = [];
+  for (const s of servers) {
+    const meta = await scout(ns, s.hostname);
+    scouted.push(JSON.stringify(meta));
+  }
+
+  ns.tprintf("[%s]", scouted.join(","));
 }
 
 async function scout(ns: NS, target: string) {
@@ -41,25 +46,4 @@ async function scout(ns: NS, target: string) {
   };
 
   return meta;
-}
-
-function dfsScan(
-  ns: NS,
-  exclude: string[],
-  root?: string,
-  currentDepth = 1
-): Server[] {
-  const unvisited = ns.scan(root).filter((s) => !exclude.includes(s));
-  let list: Server[] = [];
-
-  for (const s of unvisited) {
-    exclude.push(s);
-
-    list.push(ns.getServer(s));
-
-    list = list.concat(dfsScan(ns, exclude, s, currentDepth + 1));
-  }
-
-  // ns.tprintf("%s", root?.padStart(currentDepth, "-"));
-  return list;
 }

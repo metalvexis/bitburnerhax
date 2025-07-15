@@ -35,7 +35,11 @@ export async function main(ns: NS) {
     ns.tprintf("Opened ports %s", openPort);
   }
 
-  if(targetServer.hasAdminRights) return;
+  if(targetServer.hasAdminRights) {
+    
+    ns.tprintf("Has Admin %s", target);
+    return;
+  }
 
   let result;
   try {

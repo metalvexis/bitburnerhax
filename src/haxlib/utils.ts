@@ -1,5 +1,6 @@
-import { NS } from "@ns";
+import { NS, Server } from "@ns";
 import {
+  HGW,
   HAXFARM_LIST,
   HAXLIB_LIST,
   HAX_LIST,
@@ -41,4 +42,32 @@ export function uploadScripts(ns: NS, host: string): boolean {
       ns.scp(getScrHaxLib(HAXLIB_LIST[k]), host)
     ),
   ].some((b) => !b);
+}
+
+
+export function getMaxScriptThreads(freeRam = 1, ramUse = 1) {
+  const maxByRam = parseInt(`${freeRam / ramUse}`);
+  return maxByRam;
+}
+
+
+export function dfsScan(
+  ns: NS,
+  exclude: string[],
+  root?: string,
+  currentDepth = 1
+): Server[] {
+  const unvisited = ns.scan(root).filter((s) => !exclude.includes(s));
+  let list: Server[] = [];
+
+  for (const s of unvisited) {
+    exclude.push(s);
+
+    list.push(ns.getServer(s));
+
+    list = list.concat(dfsScan(ns, exclude, s, currentDepth + 1));
+  }
+
+  // ns.tprintf("%s", root?.padStart(currentDepth, "-"));
+  return list;
 }

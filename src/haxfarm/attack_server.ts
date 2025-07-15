@@ -1,54 +1,48 @@
-import { NS, Server } from "@ns";
+import { NS } from "@ns";
+import {
+  HAX_LIST,
+  HAXFARM_LIST,
+  getScrHax,
+  getScrHaxFarm,
+} from "/haxlib/constants";
+import { getMaxScriptThreads } from "/haxlib/utils";
 
-const PATH = "/hax";
-const SCRIPTS = new Map([
-  ["crack", "crack.js"],
-  ["hgw", "hgw.js"],
-  ["scout", "scout.js"],
-  ["remotehgw", "remotehgw.js"],
-]);
-
-const SCRIPT_PATH = new Map<string, string>(
-  Array.from(SCRIPTS).map((scr): [string, string] => {
-    return [scr[0], [PATH, scr[1]].join("/")];
-  })
-);
+enum HGW {
+  hack = "hack",
+  grow = "grow",
+  weaken = "weaken",
+}
 
 export async function main(ns: NS): Promise<void> {
   const target = ns.args[0] as string;
-  const task = ns.args[1] as string;
-  await ns.run(SCRIPT_PATH.get("crack"), 1, target);
-  await ns.asleep(1000)
-  
-  if (task === "weaken") {
-    for (;;) {
-      const server = ns.getServer(target);
-      const currHackDiff = server.hackDifficulty;
+  const freeRam = ns.getServerMaxRam("home") - ns.getServerUsedRam("home");
+  // await ns.run(getScrHax(HAX_LIST.crack), 1, target);
+  // await ns.asleep(500);
 
-      const res = await remotehgw(ns, target, task)
+  const victim = ns.getServer(target);
+  const flags = ns.flags([["t", 0]]) as { t: number };
+  const threads = flags.t;
 
-      if (!res) break;
+  for (;;) {
+    if (victim.hackDifficulty >= victim.minDifficulty + 5) {
+      // ns.tprintf("Weaken %s", target)
 
-      const newHackDiff = currHackDiff - res;
+      await ns.weaken(victim.hostname, { threads, stock: true });
 
-      if (newHackDiff <= server.minDifficulty + 2) {
-        ns.tprintf("Stop attack to %s", target);
-        break;
-      }
-
-      await ns.asleep(50);
+      await ns.asleep(500);
+      continue;
     }
-  }
-}
 
-async function remotehgw(ns: NS, target: string, task: string) {
-  switch (task) {
-    case "weaken":
-      return await ns.weaken(target);
-    case "grow":
-      return await ns.grow(target);
-    case "hack":
-      return await ns.hack(target);
+    if (victim.moneyAvailable < victim.moneyMax * 0.9) {
+      // ns.tprintf("Grow %s", target)
+
+      await ns.grow(victim.hostname, { threads, stock: true });
+
+      await ns.asleep(500);
+      continue;
+    }
+
+    await ns.hack(victim.hostname, { threads, stock: true });
+    await ns.asleep(500);
   }
-  return null;
 }

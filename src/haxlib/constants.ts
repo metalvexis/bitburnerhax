@@ -1,7 +1,14 @@
+export enum HGW {
+  hack = "hack",
+  grow = "grow",
+  weaken = "weaken"
+}
+
 export enum HAX_LIST {
   crack = "crack",
   hgw = "hgw",
   scout = "scout",
+  upload_hax = "upload_hax"
 }
 
 export function getScrHax(h: HAX_LIST) {
@@ -12,7 +19,9 @@ export function getScrHax(h: HAX_LIST) {
 export enum HAXFARM_LIST {
   attack_server = "attack_server",
   farm = "farm",
-  remotehgw = "remotehgw",
+  remote_hack = "remote_hack",
+  remote_grow = "remote_grow",
+  remote_weaken = "remote_weaken",
   rename_farm = "rename_farm",
   share_farm = "share_farm",
   zerg_server = "zerg_server",

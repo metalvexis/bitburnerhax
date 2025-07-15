@@ -1,45 +1,107 @@
-import { NS, Server } from "@ns";
-
-const PATH = "/haxfarm";
-const SCRIPTS = new Map([
-  ["rename_farm", "rename_farm.js"],
-  ["share_farm", "share_farm.js"],
-  ["attack_server", "attack_server.js"],
-  ["farm", "farm.js"],
-]);
-
-const SCRIPT_PATH = new Map<string, string>(
-  Array.from(SCRIPTS).map((scr): [string, string] => {
-    return [scr[0], [PATH, scr[1]].join("/")];
-  })
-);
+import { NS } from "@ns";
+import {
+  getScrHax,
+  getScrHaxFarm,
+  HAXFARM_LIST,
+  HAX_LIST,
+} from "/haxlib/constants";
+import { getMaxScriptThreads } from "/haxlib/utils";
 
 export async function main(ns: NS): Promise<void> {
   const target = ns.args[0] as string;
   const task = ns.args[1] as string;
-  const farms = ["home", ...ns.getPurchasedServers()];
-  ns.run(SCRIPT_PATH.get("crack") as string, 1, target);
+  const victim = ns.getServer(target);
+  await ns.run(getScrHax(HAX_LIST.crack), 1, target);
   await ns.asleep(1000);
 
-  if (task === "weaken") {
-    for (;;) {
-      const server = ns.getServer(target);
-      const currHackDiff = server.hackDifficulty;
+  const farms = ns.getPurchasedServers();
 
-      const res = await remotehgw(ns, target, task);
-
-      if (!res) break;
-
-      const newHackDiff = currHackDiff - res;
-
-      if (newHackDiff <= server.minDifficulty + 2) {
-        ns.tprintf("Stop attack to %s", target);
-        break;
-      }
-
-      await ns.asleep(50);
+  if (task === "kill") {
+    for (let f = 0; f < farms.length; f++) {
+      ns.killall(farms[f]);
+      await ns.asleep(500);
     }
+    return;
+  }
+
+  if (task === "weaken") {
+    for (let f = 0; f < farms.length; f++) {
+      const farmName = farms[f];
+      ns.killall(farmName);
+      const farm = ns.getServer(farmName);
+      const maxThreads = getMaxScriptThreads(
+        farm.maxRam - farm.ramUsed,
+        ns.getScriptRam(getScrHaxFarm(HAXFARM_LIST.remote_weaken))
+      );
+
+      const PID = ns.exec(
+        getScrHaxFarm(HAXFARM_LIST.remote_weaken),
+        farmName,
+        maxThreads,
+        victim.hostname,
+        maxThreads
+      );
+
+      await ns.asleep(500);
+
+      if (!PID) {
+        ns.tprintf("remote weaken failed on %s", farmName);
+      }
+    }
+    return;
+  }
+
+  if (task === "grow") {
+    for (let f = 0; f < farms.length; f++) {
+      const farmName = farms[f];
+      ns.killall(farmName);
+      const farm = ns.getServer(farmName);
+      const maxThreads = getMaxScriptThreads(
+        farm.maxRam - farm.ramUsed,
+        ns.getScriptRam(getScrHaxFarm(HAXFARM_LIST.remote_grow))
+      );
+
+      const PID = ns.exec(
+        getScrHaxFarm(HAXFARM_LIST.remote_grow),
+        farmName,
+        maxThreads,
+        victim.hostname,
+        maxThreads
+      );
+
+      await ns.asleep(500);
+
+      if (!PID) {
+        ns.tprintf("remote grow failed on %s", farmName);
+      }
+    }
+    return;
+  }
+
+  if (task === "hack") {
+    for (let f = 0; f < farms.length; f++) {
+      const farmName = farms[f];
+      ns.killall(farmName);
+      const farm = ns.getServer(farmName);
+      const maxThreads = getMaxScriptThreads(
+        farm.maxRam - farm.ramUsed,
+        ns.getScriptRam(getScrHaxFarm(HAXFARM_LIST.remote_hack))
+      );
+
+      const PID = ns.exec(
+        getScrHaxFarm(HAXFARM_LIST.remote_hack),
+        farmName,
+        maxThreads,
+        victim.hostname,
+        maxThreads
+      );
+
+      await ns.asleep(500);
+
+      if (!PID) {
+        ns.tprintf("remote hack failed on %s", farmName);
+      }
+    }
+    return;
   }
 }
-
-function remotehgw(ns, s, t) {}

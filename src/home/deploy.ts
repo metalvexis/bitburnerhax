@@ -1,127 +1,91 @@
 import { NS, Server } from "@ns";
-
-const PATH = "/hax";
-const SCRIPTS = new Map([
-  ["crack", "crack.js"],
-  ["hgw", "hgw.js"],
-  ["scout", "scout.js"],
-]);
-const SCRIPT_PATH = new Map<string, string>(
-  Array.from(SCRIPTS).map((scr): [string, string] => {
-    return [scr[0], [PATH, scr[1]].join("/")];
-  })
-);
+import { HAX_LIST, getScrHax } from "/haxlib/constants";
+import { uploadScripts, getMaxScriptThreads, dfsScan } from "/haxlib/utils";
 
 export async function main(ns: NS): Promise<void> {
   const WHITELIST_SERVERS = ["home", "darkweb"].concat(
     ns.getPurchasedServers()
   );
 
-  ns.tprintf("%s", `Deploying to ${ns.args[0] ?? "root"}`);
+  // ns.tprintf("%s", `Deploying to ${ns.args[0] ?? "root"}`);
   let knownServers: Server[] = [];
 
   if (!ns.args[0]) {
     knownServers = knownServers.concat(
       dfsScan(ns, [...WHITELIST_SERVERS], undefined, 0)
     );
-    ns.tprintf("Known: %s", knownServers.map((s) => s.hostname).join(", "));
+    ns.tprintf(
+      "Known: %s",
+      knownServers.map((victim) => victim.hostname).join(", ")
+    );
   } else {
     knownServers = [ns.getServer(ns.args[0] as string)];
   }
 
-  knownServers.map(async (s) => {
+  for (const victim of knownServers) {
+
+    ns.tprintf("Deploying to %s", victim.hostname);
     const isBetterHaxSkill =
-      ns.getPlayer().skills.hacking >= s.requiredHackingSkill;
-    const isPortsOpened = s.openPortCount >= s.numOpenPortsRequired;
+      ns.getPlayer().skills.hacking >= victim.requiredHackingSkill;
+    const isPortsOpened = victim.openPortCount >= victim.numOpenPortsRequired;
 
     const isHaxable = isBetterHaxSkill || isPortsOpened;
 
     if (!isHaxable) {
-      // ns.tprintf("%s %s", "Cannot hax ", s.hostname);
-      return;
+      ns.tprintf("Cannot hax %s", victim.hostname);
+      continue;
     }
 
+    const isUploaded = uploadScripts(ns, victim.hostname);
 
-    // ns.tprintf("Copying hax to %s", s.hostname);
-    Array.from(SCRIPTS).map((scr: [string, string]) => {
-      const script = [PATH, scr[1]].join("/");
-      ns.scp(script, s.hostname);
-    });
+    if (!isUploaded) {
+      ns.tprintf("Upload failed %s", victim.hostname);
+      continue;
+    }
 
-    const scriptHgw = SCRIPT_PATH.get("hgw") as string;
-    const freeRam = s.maxRam - s.ramUsed;
+    const scriptHgw = getScrHax(HAX_LIST.hgw);
+    const freeRam = victim.maxRam - victim.ramUsed;
     const hgwRam = ns.getScriptRam(scriptHgw);
     const maxHgwThreads = getMaxScriptThreads(freeRam, hgwRam);
-    const hgwIsRunning = ns.scriptRunning(scriptHgw, s.hostname);
+    const hgwIsRunning = ns.scriptRunning(scriptHgw, victim.hostname);
 
     if (!hgwIsRunning && hgwRam > freeRam) {
       ns.tprintf(
         "Not enough RAM on %s %sThreads %sGb (%sThreads %sGB required)",
-        s.hostname,
-        s.cpuCores,
+        victim.hostname,
+        victim.cpuCores,
         freeRam,
         maxHgwThreads,
         hgwRam
       );
-      return;
+      continue;
     }
 
-    // ns.tprintf(
-    //   "Running %s (%s GB) on %s (%s GB)",
-    //   "HGW: " + scriptHgw,
-    //   ns.getScriptRam(scriptHgw),
-    //   s.hostname,
-    //   s.maxRam - s.ramUsed
-    // );
+    if (hgwIsRunning) {
+      ns.tprintf("HGW running failed %s", victim.hostname);
+      continue;
+    }
 
-    // if (hgwIsRunning) ns.killall(s.hostname, true);
-     if (hgwIsRunning) return;
+    const maxInstanceByRam = getMaxScriptThreads(victim.maxRam, hgwRam);
 
-    const maxInstanceByRam = getMaxScriptThreads(s.maxRam, hgwRam);
-
-    const PID = await ns.exec(
+    const PID = ns.exec(
       scriptHgw,
-      s.hostname,
+      victim.hostname,
       maxInstanceByRam,
-      s.hostname
+      victim.hostname
     );
-    await ns.asleep(1000);
 
     if (!PID) {
       ns.tprintf(
         "HGW Deploy failed: %s (%sGB)",
-        s.hostname,
-        getMaxScriptThreads(s.maxRam, hgwRam)
+        victim.hostname,
+        getMaxScriptThreads(victim.maxRam, hgwRam)
       );
-      return;
+      continue;
     }
 
-    ns.tprintf("Haxxed: %s", s.hostname);
-  });
-}
+    ns.tprintf("Haxxed: %s", victim.hostname);
 
-function dfsScan(
-  ns: NS,
-  visited: string[],
-  root?: string,
-  currentDepth = 1
-): Server[] {
-  const unvisited = ns.scan(root).filter((s) => !visited.includes(s));
-  let list: Server[] = [];
-
-  for (const s of unvisited) {
-    visited.push(s);
-
-    list.push(ns.getServer(s));
-
-    list = list.concat(dfsScan(ns, visited, s, currentDepth + 1));
+    await ns.asleep(500);
   }
-
-  // ns.tprintf("%s", root?.padStart(currentDepth, "-"));
-  return list;
-}
-
-function getMaxScriptThreads(freeRam = 1, ramUse = 1) {
-  const maxByRam = parseInt(`${freeRam / ramUse}`);
-  return maxByRam;
 }

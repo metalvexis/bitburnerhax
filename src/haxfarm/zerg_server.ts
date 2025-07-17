@@ -31,8 +31,6 @@ export async function main(ns: NS): Promise<void> {
     await zerg(ns, action[task], farms, target);
 
     ns.tprintf("Waiting for %s:  %s", task, target);
-
-    
   }
 }
 
@@ -45,18 +43,22 @@ async function zerg(ns: NS, script: string, farms: string[], victim: string) {
       ns.getScriptRam(script)
     );
     ns.tprintf("%s Threads: %s", farmName, maxThreads);
-    const PID = ns.exec(
-      script,
-      farmName,
-      { threads: maxThreads },
-      victim,
-      maxThreads
-    );
-    if (!PID) {
-      ns.tprintf("%s did not exec on %s", script, farmName);
-      continue;
+    try {
+      const PID = ns.exec(
+        script,
+        farmName,
+        { threads: maxThreads },
+        victim,
+        maxThreads
+      );
+      if (!PID) {
+        ns.tprintf("%s did not exec on %s", script, farmName);
+        continue;
+      }
+      PIDS.push(PID);
+    } catch (error) {
+      ns.tprintf("Skipping %s", farmName)
     }
-    PIDS.push(PID)
   }
 
   if (!PIDS.length) return;

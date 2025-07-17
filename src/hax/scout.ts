@@ -3,31 +3,39 @@ import { dfsScan } from "/haxlib/utils";
 
 const HAXSCRIPTS = ["hax/hgw", "hax/crack", "hax/scout"];
 
-export async function main(ns: NS) {
+export type ScoutMeta = Server & {
+  isHaxable: boolean,
+  isHaxUploaded: boolean
+}
+
+export function main(ns: NS) {
   ns.clearLog();
   const targetHost: string | null = (ns.args[0] as string) || null;
   ns.tprintf("%s", `Scouting: ${targetHost}`);
 
   if (targetHost) {
-    const s = await scout(ns, targetHost);
+    const s = scout(ns, targetHost);
     ns.tprintf("%s", JSON.stringify(s, null, " "));
     return;
   }
 
+  ns.tprintf("[%s]", scoutAll(ns).map((s) => JSON.stringify(s)).join(","));
+}
+
+export function scoutAll(ns: NS): ScoutMeta[] {
   const WHITELIST_SERVERS = ["home", "darkweb"].concat(
     ns.getPurchasedServers()
   );
   const servers = dfsScan(ns, WHITELIST_SERVERS);
-  const scouted: string[] = [];
+  const scouted: ScoutMeta[] = [];
   for (const s of servers) {
-    const meta = await scout(ns, s.hostname);
-    scouted.push(JSON.stringify(meta));
+    const meta = scout(ns, s.hostname);
+    scouted.push(meta);
   }
-
-  ns.tprintf("[%s]", scouted.join(","));
+  return scouted
 }
 
-async function scout(ns: NS, target: string) {
+export function scout(ns: NS, target: string): ScoutMeta {
   const targetServer = ns.getServer(target);
   const player = ns.getPlayer();
   const isBetterHaxSkill =
@@ -35,13 +43,13 @@ async function scout(ns: NS, target: string) {
   const isPortsOpened =
     targetServer.openPortCount >= targetServer.numOpenPortsRequired;
   const isHaxable = isBetterHaxSkill || isPortsOpened;
-  const isMissingHax = HAXSCRIPTS.some(
+  const isHaxUploaded = !HAXSCRIPTS.some(
     (scr) => !ns.fileExists(`${scr}.js`, target)
   );
 
   const meta = {
     isHaxable,
-    isMissingHax,
+    isHaxUploaded,
     ...targetServer,
   };
 

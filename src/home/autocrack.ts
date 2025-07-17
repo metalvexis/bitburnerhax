@@ -24,7 +24,7 @@ export async function main(ns: NS): Promise<void> {
   for (const victim of knownServers) {
     // ns.tprintf("Cracking %s", victim.hostname);
     const PID = await ns.run(getScrHax(HAX_LIST.crack), 1, victim.hostname);
-    await ns.asleep(1000)
+    await ns.asleep(100)
     if (PID <= 0) {
       ns.tprintf("Crack script failed on %s", victim.hostname);
     }

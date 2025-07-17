@@ -74,7 +74,6 @@ export function dfsScan(
 
 export async function waitForScript(ns: NS, scriptOrPID: (string | number)[], hosts: string[]) {
   while(hosts.map((h,idx) => ns.isRunning(scriptOrPID[idx], h)).includes(true)) {
-    ns.tprintf("Waiting")
     await ns.asleep(5000);
   }
   ns.tprintf("Stopped waiting %s", scriptOrPID)

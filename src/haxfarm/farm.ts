@@ -5,7 +5,7 @@ import { isScriptsUploaded, uploadScripts } from "/haxlib/utils";
 export async function main(ns: NS): Promise<void> {
   ns.tprint("Managing farms");
 
-  const newFarmCosts = [8, 16, 32, 64, 128].map((ram) => [
+  const newFarmCosts = [16, 32, 64, 128, 256, 512].map((ram) => [
     ram,
     ns.getPurchasedServerCost(ram),
   ]);

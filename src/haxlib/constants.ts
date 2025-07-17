@@ -1,14 +1,14 @@
 export enum HGW {
   hack = "hack",
   grow = "grow",
-  weaken = "weaken"
+  weaken = "weaken",
 }
 
 export enum HAX_LIST {
   crack = "crack",
   hgw = "hgw",
   scout = "scout",
-  upload_hax = "upload_hax"
+  upload_hax = "upload_hax",
 }
 
 export function getScrHax(h: HAX_LIST) {
@@ -38,10 +38,9 @@ export enum HAXLIB_LIST {
 }
 
 export function getScrHaxLib(h: HAXLIB_LIST) {
-  const DIR = "haxlib"
-  return joinpath(DIR,h)
+  const DIR = "haxlib";
+  return joinpath(DIR, h);
 }
-
 
 function joinpath(dir: string, f: string, ext = ".js") {
   return [dir, f + ext].join("/");

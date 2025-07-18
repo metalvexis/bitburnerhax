@@ -87,7 +87,7 @@ export function Root({ ns }: RootProps) {
     });
 
     setVictimsDelta(
-      newDelta.sort((a, b) => a.numOpenPortsRequired - b.numOpenPortsRequired)
+      newDelta.sort((a, b) => parseInt(a.numOpenPortsRequired) - parseInt(b.numOpenPortsRequired) )
     );
   }, [victims]);
 

@@ -1,8 +1,7 @@
 import { NS, Server } from "@ns";
-import { assert, roundUp } from "/haxlib/utils";
-import { HAXFARM_RAM } from "/haxlib/constants";
+import { TARGET_HACK } from "/haxlib/constants";
+import { assert, freeRam, getBatchStats } from "/haxlib/utils";
 
-const TARGET_HACK = 0.1; // x% of max money
 
 export async function main(ns: NS): Promise<void> {
   assert(!!ns.args[0], "target required");
@@ -62,71 +61,16 @@ export async function main(ns: NS): Promise<void> {
     )
   );
   // for (const f of farmNames) {
-  //   ns.exec()
+  //   const free = freeRam(ns, f);
+  //   if (batchRamUse > free) {
+  //     ns.tprintf("Not enough ram: %s", f);
+  //     break;
+  //   }
+
+  //   const endTime = Math.max(hackTime, growTime, weakenTime);
+  //   const hackStartTime = endTime - hackTime;
+  //   const growStartTime = endTime - growTime;
+  //   const weakenStartTime = endTime - weakenTime;
+
   // }
-}
-
-type BatchStats = {
-  batchRamUse: number;
-  hackThreads: number;
-  hackRamUse: number;
-  hackDiffIncr: number;
-  growThreads: number;
-  growRamUse: number;
-  growDiffIncr: number;
-  weakenHackThreads: number;
-  weakenGrowThreads: number;
-  hackTime: number;
-  growTime: number;
-  weakenTime: number;
-
-  weakenHackRamUse: number;
-  weakenGrowRamUse: number;
-};
-
-function getBatchStats(
-  ns: NS,
-  target: string,
-  hackPercent: number
-): BatchStats {
-  const hackThreads = roundUp(hackPercent / ns.hackAnalyze(target));
-  const hackRamUse = roundUp(hackThreads * HAXFARM_RAM.remote_hack);
-  const hackDiffIncr = ns.hackAnalyzeSecurity(hackThreads, target);
-
-  const growThreads = roundUp(ns.growthAnalyze(target, hackPercent + 1));
-  const growRamUse = roundUp(growThreads * HAXFARM_RAM.remote_grow);
-  const growDiffIncr = ns.growthAnalyzeSecurity(growThreads, target);
-
-  const weakenHackThreads = roundUp(hackDiffIncr / ns.weakenAnalyze(1));
-  const weakenHackRamUse = roundUp(
-    weakenHackThreads * HAXFARM_RAM.remote_weaken
-  );
-  const weakenGrowThreads = roundUp(growDiffIncr / ns.weakenAnalyze(1));
-  const weakenGrowRamUse = roundUp(
-    weakenGrowThreads * HAXFARM_RAM.remote_weaken
-  );
-
-  const hackTime = ns.getHackTime(target);
-  const growTime = ns.getGrowTime(target);
-  const weakenTime = ns.getWeakenTime(target);
-  const batchRamUse = roundUp(
-    hackRamUse + growRamUse + weakenGrowRamUse + weakenHackRamUse
-  );
-
-  return {
-    batchRamUse,
-    hackThreads,
-    hackRamUse,
-    hackDiffIncr,
-    growThreads,
-    growRamUse,
-    growDiffIncr,
-    weakenHackThreads,
-    weakenGrowThreads,
-    weakenHackRamUse,
-    weakenGrowRamUse,
-    hackTime,
-    growTime,
-    weakenTime,
-  };
 }

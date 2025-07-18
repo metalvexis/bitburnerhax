@@ -4,7 +4,7 @@ export async function main(ns: NS): Promise<void> {
   for (;;) {
     // ns.tprint(`Triggering hax`)
     try {
-      await hgw(ns, ns.args[0]);
+      await hgw(ns, ns.args[0] as string);
     } catch (error) {
       break;
     }

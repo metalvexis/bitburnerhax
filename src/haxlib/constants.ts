@@ -1,3 +1,5 @@
+export const TARGET_HACK = 0.20; // x% of max money
+
 export enum HGW {
   hack = "hack",
   grow = "grow",
@@ -17,7 +19,6 @@ export function getScrHax(h: HAX_LIST) {
 }
 
 export enum HAXFARM_LIST {
-  attack_server = "attack_server",
   farm = "farm",
   remote_hack = "remote_hack",
   remote_grow = "remote_grow",
@@ -31,6 +32,7 @@ export enum HAXFARM_LIST {
 
 export enum HAXFARM_RAM {
   share_farm = 4,
+  snipe_hgw = 4,
   remote_hack = 1.7,
   remote_grow = 1.75,
   remote_weaken = 1.75,

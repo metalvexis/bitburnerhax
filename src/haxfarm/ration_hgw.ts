@@ -1,38 +1,34 @@
 import { NS } from "@ns";
-import { HGW, HAXFARM_RAM } from "/haxlib/constants";
-import { assert, getMaxScriptThreads, roundUp } from "/haxlib/utils";
+import { HGW } from "/haxlib/constants";
+import { assert } from "/haxlib/utils";
 
 export async function main(ns: NS): Promise<void> {
   assert(!!ns.args[0], "action required");
   assert(!!ns.args[1], "target required");
 
-  const threads = ns.args[0] as number;
-  const action = ns.args[1] as HGW;
-  const target = ns.args[2] as string;
+  const action = ns.args[0] as HGW;
+  const target = ns.args[1] as string;
   const isHack = [HGW.hack].includes(action);
   const isGrow = [HGW.grow].includes(action);
   const isWeaken = [HGW.weaken].includes(action);
   const isAll = !isHack && !isGrow && !isWeaken;
 
-  // roundUp(
-  //   getMaxScriptThreads(
-  //     (host.maxRam - host.ramUsed) * flags.t,
-  //     HAXFARM_RAM.snipe_hgw
-  //   )
-  // );
+  const flags = ns.flags([["t", 0]]) as { t: number };
+  const threads = flags.t;
+
   if (isHack) {
     for (;;) {
       const victim = ns.getServer(target);
       await ns.hack(victim.hostname, { threads, stock: true });
-      await ns.asleep(100);
+      await ns.asleep(100)
     }
   }
-
+  
   if (isGrow) {
     for (;;) {
       const victim = ns.getServer(target);
       await ns.grow(victim.hostname, { threads, stock: true });
-      await ns.asleep(100);
+      await ns.asleep(100)
     }
   }
 
@@ -40,7 +36,7 @@ export async function main(ns: NS): Promise<void> {
     for (;;) {
       const victim = ns.getServer(target);
       await ns.weaken(victim.hostname, { threads, stock: true });
-      await ns.asleep(100);
+      await ns.asleep(100)
     }
   }
 

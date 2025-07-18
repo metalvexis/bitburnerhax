@@ -1,12 +1,15 @@
 import { NS, Server } from "@ns";
-import { dfsScan } from "/haxlib/utils";
+import { TARGET_HACK } from "/haxlib/constants";
+import { dfsScan, getBatchStats, BatchStats, getHgwRatio } from "/haxlib/utils";
 
 const HAXSCRIPTS = ["hax/hgw", "hax/crack", "hax/scout"];
 
-export type ScoutMeta = Server & {
+type PlayerHax = {
   isHaxable: boolean,
   isHaxUploaded: boolean
-}
+};
+
+export type ScoutMeta = Server & BatchStats & PlayerHax;
 
 export function main(ns: NS) {
   ns.clearLog();
@@ -46,12 +49,24 @@ export function scout(ns: NS, target: string): ScoutMeta {
   const isHaxUploaded = !HAXSCRIPTS.some(
     (scr) => !ns.fileExists(`${scr}.js`, target)
   );
+  const batchStats = getBatchStats(ns, target, TARGET_HACK)
 
   const meta = {
     isHaxable,
     isHaxUploaded,
     ...targetServer,
-  };
+    ...batchStats
+  };  
+  // const a = getHgwRatio(512, 1, 2, 3);
 
+  // ns.tprint(JSON.stringify(a))
+  
+  // const b = getHgwRatio(512, 1, 3, 7);
+
+  // ns.tprint(JSON.stringify(b))
+  
+  // const c = getHgwRatio(512, 2, 0, 4);
+
+  // ns.tprint(JSON.stringify(c))
   return meta;
 }

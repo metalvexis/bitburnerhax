@@ -4,9 +4,11 @@ import {
   HAXFARM_LIST,
   HAXLIB_LIST,
   HAX_LIST,
+  HAXFARM_RAM,
   getScrHax,
   getScrHaxFarm,
   getScrHaxLib,
+  TARGET_HACK,
 } from "./constants";
 
 export function assert(cond: boolean, errMsg: string) {
@@ -73,21 +75,107 @@ export function dfsScan(
   return list;
 }
 
-export async function waitForScript(
-  ns: NS,
-  scriptOrPID: (string | number)[],
-  hosts: string[]
-) {
-  while (
-    hosts.map((h, idx) => ns.isRunning(scriptOrPID[idx], h)).includes(true)
-  ) {
+// export async function waitForScript(
+//   ns: NS,
+//   scriptOrPID: (string | number)[],
+//   hosts: string[]
+// ) {
+//   while (
+//     hosts.map((h, idx) => ns.isRunning(scriptOrPID[idx], h)).includes(true)
+//   ) {
+//     await ns.asleep(5000);
+//   }
+//   ns.tprintf("Stopped waiting %s", scriptOrPID);
+// }
+export async function waitForScript(ns: NS, hostPidMap: Map<string, number[]>) {
+  let isRunning = true;
+  while (isRunning) {
+    isRunning = hostPidMap.keys().some((k) => {
+      const PIDs = hostPidMap.get(k);
+      return PIDs.some((p) => ns.isRunning(p, k));
+    });
     await ns.asleep(5000);
   }
-  ns.tprintf("Stopped waiting %s", scriptOrPID);
 }
 
 export function roundUp(n: number) {
   return Math.max(1, Math.ceil(n));
 }
 
-export function getHgwRatio(h: number, g: number, w: number) {}
+export function getHgwRatio(ram: number, h: number, g: number, w: number) {
+  const total = h + g + w;
+  const ratioH = Math.floor(ram * (h / total));
+  const ratioG = Math.floor(ram * (g / total));
+  const ratioW = Math.floor(ram * (w / total));
+  return { hack: ratioH, grow: ratioG, weaken: ratioW };
+}
+
+export function freeRam(ns: NS, host: string) {
+  const s = ns.getServer(host);
+  return s.maxRam - s.ramUsed;
+}
+
+export type BatchStats = {
+  batchRamUse: number;
+  hackThreads: number;
+  hackRamUse: number;
+  hackDiffIncr: number;
+  growThreads: number;
+  growRamUse: number;
+  growDiffIncr: number;
+  weakenHackThreads: number;
+  weakenGrowThreads: number;
+  hackTime: number;
+  growTime: number;
+  weakenTime: number;
+
+  weakenHackRamUse: number;
+  weakenGrowRamUse: number;
+};
+
+export function getBatchStats(
+  ns: NS,
+  target: string,
+  hackPercent: number
+): BatchStats {
+  const hackThreads = roundUp(hackPercent / ns.hackAnalyze(target));
+  const hackRamUse = roundUp(hackThreads * HAXFARM_RAM.remote_hack);
+  const hackDiffIncr = ns.hackAnalyzeSecurity(hackThreads, target);
+
+  const growThreads = roundUp(ns.growthAnalyze(target, hackPercent + 1));
+  const growRamUse = roundUp(growThreads * HAXFARM_RAM.remote_grow);
+  const growDiffIncr = ns.growthAnalyzeSecurity(growThreads, target);
+
+  const weakenHackThreads = roundUp(hackDiffIncr / ns.weakenAnalyze(1));
+  const weakenHackRamUse = roundUp(
+    weakenHackThreads * HAXFARM_RAM.remote_weaken
+  );
+  const weakenGrowThreads = roundUp(growDiffIncr / ns.weakenAnalyze(1));
+  const weakenGrowRamUse = roundUp(
+    weakenGrowThreads * HAXFARM_RAM.remote_weaken
+  );
+
+  const hackTime = ns.getHackTime(target);
+  const growTime = ns.getGrowTime(target);
+  const weakenTime = ns.getWeakenTime(target);
+  const batchRamUse = roundUp(
+    hackRamUse + growRamUse + weakenGrowRamUse + weakenHackRamUse
+  );
+
+  return {
+    batchRamUse,
+    hackThreads,
+    hackRamUse,
+    hackDiffIncr,
+    growThreads,
+    growRamUse,
+    growDiffIncr,
+    weakenHackThreads,
+    weakenGrowThreads,
+    weakenHackRamUse,
+    weakenGrowRamUse,
+    hackTime,
+    growTime,
+    weakenTime,
+  };
+}

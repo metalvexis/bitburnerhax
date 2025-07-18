@@ -1,8 +1,8 @@
 
 import { NS } from "@ns";
-
+import { assert } from "/haxlib/utils";
 export async function main(ns: NS): Promise<void> {
-  if (!ns.args[0]) throw new Error('Iterations required')
+  assert(!!ns.args[0], "iterations required")
 
   const iterations = parseInt(ns.args[0] as string);
 

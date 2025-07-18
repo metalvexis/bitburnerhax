@@ -8,50 +8,46 @@ export interface RootProps {
   ns: NS;
 }
 type Delta = {
-  dmoneyPercent: number;
-  dmoneyAvailable: number;
-  dhackDifficulty: number;
+  dmoneyPercent: string;
+  dmoneyAvailable: string;
+  dhackDifficulty: string;
 };
 
-type RenderDelta = Delta &
-  Pick<
-    ScoutMeta,
-    | "hostname"
-    | "isHaxable"
-    | "isHaxUploaded"
-    | "moneyMax"
-    | "moneyAvailable"
-    | "hackDifficulty"
-    | "minDifficulty"
-    | "serverGrowth"
-    | "maxRam"
-    | "ramUsed"
-    | "requiredHackingSkill"
-    | "numOpenPortsRequired"
-  >;
+type RenderDelta = {
+  hostname: string;
+  isHaxable: boolean;
+  isHaxUploaded: boolean;
+  moneyMax: string;
+  moneyAvailable: string;
+  hackDifficulty: string;
+  minDifficulty: string;
+  serverGrowth: string;
+  maxRam: string;
+  ramUsed: string;
+  requiredHackingSkill: string;
+  numOpenPortsRequired: string;
+};
 
 export function Root({ ns }: RootProps) {
   const time = useInterval(3000); // re-render every xth of a second
   const [victims, setVictims] = React.useState<ScoutMeta[]>([]);
-  const [victimsDelta, setVictimsDelta] = React.useState(
-    new Map<string, RenderDelta>()
-  );
+  const [victimsDelta, setVictimsDelta] = React.useState<RenderDelta[]>([]);
   const renderData = [
     "hostname",
     "isHaxable",
     "isHaxUploaded",
-    "dmoneyPercent",
+    // "dmoneyPercent",
     "moneyMax",
-    "dmoneyAvailable",
+    // "dmoneyAvailable",
     "moneyAvailable",
     "hackDifficulty",
-    "dhackDifficulty",
+    // "dhackDifficulty",
     "minDifficulty",
     "serverGrowth",
     "maxRam",
     "ramUsed",
     "requiredHackingSkill",
-    "numOpenPortsRequired"
+    "numOpenPortsRequired",
   ];
 
   React.useEffect(() => {
@@ -62,37 +58,37 @@ export function Root({ ns }: RootProps) {
   React.useMemo(() => {
     // ns.tprint("Analyzing...")
 
-    const newDelta = new Map(victimsDelta);
+    const newDelta: RenderDelta[] = [];
     victims.map((v) => {
-      const hasPrev = victimsDelta.get(v.hostname);
+      // const prevDelta = victimsDelta.find((dV) => (dV.hostname = v.hostname));
 
-      let dmoneyPercent = 0;
-      let dmoneyAvailable = 0;
-      let dhackDifficulty = 0;
+      // let dmoneyPercent = (v?.moneyAvailable / v?.moneyMax) * 100;
+      // let dmoneyAvailable = v?.moneyAvailable;
+      // let dhackDifficulty = v?.hackDifficulty;
 
-      if (v && hasPrev) {
-        dmoneyPercent =
-          ((v?.moneyAvailable / v?.moneyMax) * 100);
-        dmoneyAvailable = (v?.moneyAvailable - hasPrev?.moneyAvailable);
-        dhackDifficulty = (v?.hackDifficulty - hasPrev?.hackDifficulty);
-      }
+      // if (prevDelta) {
+      //   dmoneyPercent = prevDelta.dmoneyPercent - dmoneyPercent;
+      //   dmoneyAvailable = prevDelta?.moneyAvailable - dmoneyAvailable;
+      //   dhackDifficulty = prevDelta?.hackDifficulty - dhackDifficulty;
+      // }
 
-      newDelta.set(v.hostname, {
+      newDelta.push({
         ...v,
-
-        moneyMax: v.moneyMax?.toFixed(2),
-        hackDifficulty: v.hackDifficulty?.toFixed(2),
-        minDifficulty: v.minDifficulty?.toFixed(2),
-        moneyAvailable: v.moneyAvailable?.toFixed(2),
-        dmoneyPercent: dmoneyPercent.toFixed(2),
-        dmoneyAvailable: dmoneyAvailable.toFixed(2),
-        dhackDifficulty: dhackDifficulty.toFixed(2),
-        requiredHackingSkill: v.requiredHackingSkill,
-        numOpenPortsRequired: v.numOpenPortsRequired,
+        serverGrowth: `${v.serverGrowth}`,
+        ramUsed: `${v.ramUsed}`,
+        maxRam: `${v.maxRam}`,
+        moneyMax: v.moneyMax?.toFixed(2) ?? "",
+        hackDifficulty: v.hackDifficulty?.toFixed(2) ?? "",
+        minDifficulty: v.minDifficulty?.toFixed(2) ?? "",
+        moneyAvailable: v.moneyAvailable?.toFixed(2) ?? "",
+        requiredHackingSkill: `${v.requiredHackingSkill}`,
+        numOpenPortsRequired: `${v.numOpenPortsRequired}`,
       });
     });
 
-    setVictimsDelta(newDelta);
+    setVictimsDelta(
+      newDelta.sort((a, b) => a.numOpenPortsRequired - b.numOpenPortsRequired)
+    );
   }, [victims]);
 
   return (
@@ -101,13 +97,13 @@ export function Root({ ns }: RootProps) {
         style={{
           zIndex: 4000,
           backgroundColor: "black",
-          color: "#72e0d1",
+          color: "#0ee41c",
           border: "1px solid grey",
           userSelect: "all",
           display: "flex",
           flexDirection: "column",
           overflow: "scroll",
-          width: "1600px",
+          fontSize: "18px",
         }}
       >
         <div
@@ -115,9 +111,7 @@ export function Root({ ns }: RootProps) {
             height: "20px",
             cursor: "grab",
           }}
-        >
-          Scout
-        </div>
+        ></div>
 
         <table style={{ borderCollapse: "collapse", width: "100%" }}>
           <thead>

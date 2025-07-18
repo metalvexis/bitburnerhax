@@ -20,6 +20,8 @@ export async function main(ns: NS): Promise<void> {
 
   const task = ns.args[0] as string;
   const target = ns.args[1] as string;
+  // const ratio = (ns.args[2] as string).split(':');
+  // const to
 
   const action: Record<string, string> = {
     hack: getScrHaxFarm(HAXFARM_LIST.remote_hack),

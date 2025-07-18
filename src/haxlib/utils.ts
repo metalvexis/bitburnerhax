@@ -9,6 +9,10 @@ import {
   getScrHaxLib,
 } from "./constants";
 
+export function assert(cond: boolean, errMsg: string) {
+  if (!cond) throw Error(errMsg);
+}
+
 export function isScriptsUploaded(ns: NS, host: string): boolean {
   const haxScripts = Array.from(Object.values(HAX_LIST));
   const isHaxUploaded = !haxScripts.some(
@@ -28,7 +32,6 @@ export function isScriptsUploaded(ns: NS, host: string): boolean {
   return isHaxUploaded && isHaxfarmUploaded && isHaxlibUploaded;
 }
 
-
 export function uploadScripts(ns: NS, host: string): boolean {
   return ![
     ...Array.from(Object.values(HAX_LIST)).map((k) =>
@@ -45,11 +48,9 @@ export function uploadScripts(ns: NS, host: string): boolean {
   ].some((b) => !b);
 }
 
-
 export function getMaxScriptThreads(freeRam = 1, ramUse = 1) {
   return Math.floor(freeRam / ramUse);
 }
-
 
 export function dfsScan(
   ns: NS,
@@ -72,9 +73,21 @@ export function dfsScan(
   return list;
 }
 
-export async function waitForScript(ns: NS, scriptOrPID: (string | number)[], hosts: string[]) {
-  while(hosts.map((h,idx) => ns.isRunning(scriptOrPID[idx], h)).includes(true)) {
+export async function waitForScript(
+  ns: NS,
+  scriptOrPID: (string | number)[],
+  hosts: string[]
+) {
+  while (
+    hosts.map((h, idx) => ns.isRunning(scriptOrPID[idx], h)).includes(true)
+  ) {
     await ns.asleep(5000);
   }
-  ns.tprintf("Stopped waiting %s", scriptOrPID)
+  ns.tprintf("Stopped waiting %s", scriptOrPID);
 }
+
+export function roundUp(n: number) {
+  return Math.max(1, Math.ceil(n));
+}
+
+export function getHgwRatio(h: number, g: number, w: number) {}

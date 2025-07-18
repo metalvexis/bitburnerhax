@@ -1,5 +1,5 @@
 import { NS } from "@ns";
-import { HAXFARM_LIST, getScrHaxFarm } from "/haxlib/constants";
+import { HAXFARM_LIST, getScrHaxFarm, HAXFARM_RAM } from "/haxlib/constants";
 import { isScriptsUploaded, uploadScripts } from "/haxlib/utils";
 
 export async function main(ns: NS): Promise<void> {
@@ -16,7 +16,7 @@ export async function main(ns: NS): Promise<void> {
   );
 
   const farmMap = new Map<string, Record<string, any>>();
-  const farms = ["home", ...ns.getPurchasedServers()];
+  const farms = [...ns.getPurchasedServers()];
 
   const totalSharableRam = farms.map((f) => {
     const farm = ns.getServer(f);
@@ -26,9 +26,12 @@ export async function main(ns: NS): Promise<void> {
 
   for (const f of farms) {
     const isScriptsUploadOk = uploadScripts(ns, f);
-    const isScriptsExists = isScriptsUploaded(ns, f)
+    const isScriptsExists = isScriptsUploaded(ns, f);
     const isShareFarm = (ns.args[0] as string) == "share";
-    const isShared = ns.scriptRunning(getScrHaxFarm(HAXFARM_LIST.share_farm), f);
+    const isShared = ns.scriptRunning(
+      getScrHaxFarm(HAXFARM_LIST.share_farm),
+      f
+    );
 
     if (isShareFarm && isShared) {
       ns.tprintf("Stop sharing %s", f);
@@ -36,12 +39,17 @@ export async function main(ns: NS): Promise<void> {
     }
 
     if (isShareFarm) {
-      (await ns.exec(
-        getScrHaxFarm(HAXFARM_LIST.share_farm),
-        f,
-        1,
-        ns.args[1] as string
-      )) > 0;
+      const shareFarm = ns.getServer(f);
+      const free = shareFarm.maxRam - shareFarm.ramUsed;
+      const isShareSuccess =
+        ns.exec(
+          getScrHaxFarm(HAXFARM_LIST.share_farm),
+          f,
+          Math.max(1, Math.ceil(free / HAXFARM_RAM.share_farm)),
+          ns.args[1] as string
+        ) > 0;
+
+      if (!isShareSuccess) ns.tprintf("Share failed: %s", f);
     }
 
     farmMap.set(f, {

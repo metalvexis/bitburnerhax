@@ -5,6 +5,4 @@ export async function main(ns: NS): Promise<void> {
     threads: ns.args[1] as number,
     stock: true,
   });
-  await ns.asleep(100)
-  
 }

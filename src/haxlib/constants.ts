@@ -25,6 +25,15 @@ export enum HAXFARM_LIST {
   rename_farm = "rename_farm",
   share_farm = "share_farm",
   zerg_server = "zerg_server",
+  snipe_hgw = "snipe_hgw",
+  batch_hgw = "batch_hgw",
+}
+
+export enum HAXFARM_RAM {
+  share_farm = 4,
+  remote_hack = 1.7,
+  remote_grow = 1.75,
+  remote_weaken = 1.75,
 }
 
 export function getScrHaxFarm(h: HAXFARM_LIST) {
